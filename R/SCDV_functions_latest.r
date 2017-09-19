@@ -360,7 +360,7 @@ permutation_test_var <- function(data_1,weight_1,data_2,weight_2,num_permute=100
 
 ##get var, mean, and fitted var
 #' @export
-get_var_fit <- function(input_data,data_weight,span_param){
+get_var_fit <- function(input_data,data_weight,span_param = 0.5){
 
 	data_stat_weighted <- sapply(c(1:nrow(input_data)),function(x) get_weighted_stat(input_data[x,],data_weight[x,]))
 
@@ -377,7 +377,7 @@ get_var_fit <- function(input_data,data_weight,span_param){
 
 ##get estimates
 #' @export
-scdv_estimate <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,span_param){
+scdv_estimate <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,span_param = 0.5){
 
 	treatment_data <- as.matrix(treatment_data)
 	control_data <- as.matrix(control_data)
@@ -415,7 +415,7 @@ is.infinite.data.frame <- function(obj){
 
 ##permute function
 #' @export
-scdv_permute <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,var_expect_treatment,var_expect_control,per_time){
+scdv_permute <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,var_expect_treatment,var_expect_control,per_time = 1000){
 
 	df_treatment <- ncol(treatment_data)
 	df_control <- ncol(control_data)
@@ -468,7 +468,7 @@ scdv_permute <- function(treatment_data,treatment_data_weight,control_data,contr
 ##permute function multi-core
 #' @import parallel
 #' @export
-scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,var_expect_treatment,var_expect_control,per_time,ncore=4){
+scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,var_expect_treatment,var_expect_control,per_time = 1000,ncore = 4){
 
 	df_treatment <- ncol(treatment_data)
 	df_control <- ncol(control_data)
@@ -524,7 +524,7 @@ scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,co
 
 ##main function
 #' @export
-scdv_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,per_time=10000,span_param=0.5,ncore=1){
+scdv_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,per_time=1000,span_param=0.5,ncore=1){
 
 	message('Estimating variance scale factor')
 	flush.console()
