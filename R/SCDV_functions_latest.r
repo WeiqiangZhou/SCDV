@@ -535,6 +535,7 @@ scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,co
 
 
 ##main function
+#' @import parallel
 #' @export
 scdv_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,per_time=1000,span_param=0.5,ncore=1){
 
