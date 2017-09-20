@@ -248,7 +248,7 @@ estimate_drop_out <- function(sc_data,sc_data_expect,gene_len,per_tile_beta=4,pe
 }
 
 ##estimate drop out wrap up
-#' @import parallel
+#' @importFrom parallel mclapply
 #' @export
 estimate_dropout_main <- function(sc_data_all,sc_data_expect_all,gene_len,ncore=1,per_tile_beta=4,per_tile_tau=4,alpha_init=c(1,-1),beta_init=c(0.1,0.1,0.1),tau_init=c(0.1,-0.1,-0.1),em_error_par=0.01,em_min_count=1,em_max_count=100,trace_flag=0){
 
@@ -260,6 +260,7 @@ estimate_dropout_main <- function(sc_data_all,sc_data_expect_all,gene_len,ncore=
   }
   return(result)
 }
+
 ##get weighted mean and variance
 #' @export
 get_weighted_stat <- function(data_in,weight_in){
@@ -331,7 +332,21 @@ permutation_test_mean <- function(data_1,weight_1,data_2,weight_2,num_permute=10
   pval_less <- mean(test_org > permut)
   pval_ts <- mean(abs(test_org) < abs(permut))
 
-  return(list(pval_greater=pval_greater,pval_less=pval_less,pval_ts=pval_ts))
+  return(list(statistics=test_org,pval_greater=pval_greater,pval_less=pval_less,pval_ts=pval_ts))
+}
+
+##test differential expression wrap up
+#' @importFrom parallel mclapply
+#' @export
+test_mean_main <- function(data_1_all,weight_1_all,data_2_all,weight_2_all,num_permute=1000,ncore=1){
+  
+  if(ncore > 1){
+    result <- mclapply(c(1:nrow(data_1_all)),function(i){permutation_test_mean(data_1_all[i,],weight_1_all[i,],data_2_all[i,],weight_2_all[i,],num_permute)},mc.cores=ncore)
+  }
+  else{
+    result <- lapply(c(1:nrow(data_1_all)),function(i){permutation_test_mean(data_1_all[i,],weight_1_all[i,],data_2_all[i,],weight_2_all[i,],num_permute)})
+  }
+  return(result)
 }
 
 ##permutation test for differential variance
@@ -367,7 +382,21 @@ permutation_test_var <- function(data_1,weight_1,data_2,weight_2,num_permute=100
   pval_less <- mean(test_org > permut)
   pval_ts <- mean(abs(test_org) < abs(permut))
 
-  return(list(pval_greater=pval_greater,pval_less=pval_less,pval_ts=pval_ts))
+  return(list(statistics=test_org,pval_greater=pval_greater,pval_less=pval_less,pval_ts=pval_ts))
+}
+
+##test differential variance wrap up
+#' @importFrom parallel mclapply
+#' @export
+test_var_main <- function(data_1_all,weight_1_all,data_2_all,weight_2_all,num_permute=1000,ncore=1){
+  
+  if(ncore > 1){
+    result <- mclapply(c(1:nrow(data_1_all)),function(i){permutation_test_var(data_1_all[i,],weight_1_all[i,],data_2_all[i,],weight_2_all[i,],num_permute)},mc.cores=ncore)
+  }
+  else{
+    result <- lapply(c(1:nrow(data_1_all)),function(i){permutation_test_var(data_1_all[i,],weight_1_all[i,],data_2_all[i,],weight_2_all[i,],num_permute)})
+  }
+  return(result)
 }
 
 ##get var, mean, and fitted var
@@ -478,7 +507,7 @@ scdv_permute <- function(treatment_data,treatment_data_weight,control_data,contr
 
 
 ##permute function multi-core
-#' @import parallel
+#' @importFrom parallel mclapply
 #' @export
 scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,var_expect_treatment,var_expect_control,per_time = 1000,ncore = 4){
 
@@ -535,7 +564,7 @@ scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,co
 
 
 ##main function
-#' @import parallel
+#' @importFrom parallel mclapply
 #' @export
 scdv_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,per_time=1000,span_param=0.5,ncore=1){
 
