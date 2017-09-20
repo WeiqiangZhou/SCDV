@@ -3,6 +3,7 @@
 S3method(is.infinite,data.frame)
 export(adjust_library_size)
 export(estimate_drop_out)
+export(estimate_dropout_main)
 export(get_expected_cell)
 export(get_var_fit)
 export(get_weighted_stat)
