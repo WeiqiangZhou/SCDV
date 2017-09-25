@@ -4,12 +4,13 @@
 \alias{get_expected_cell}
 \title{Get the nearest neighboring cells}
 \usage{
-get_expected_cell(data_count, gene_len, max_num = 20, scale_factor = 1e+06)
+get_expected_cell(data_count, gene_len_org, max_num = 20,
+  scale_factor = 1e+06)
 }
 \arguments{
 \item{data_count}{Input count matrix.}
 
-\item{gene_len}{Kilo-base-pair length of gene}
+\item{gene_len_org}{A vector for the length of genes in coding regions}
 
 \item{max_num}{Maximum number of nearest neighboring cells}
 

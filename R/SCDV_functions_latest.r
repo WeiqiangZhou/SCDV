@@ -18,18 +18,18 @@ qc_check <- function(data_count){
 #'
 #' This function allows you to get the nunmber of nearest neighbor used for estimating dropout.
 #' @param data_count Input count matrix.
-#' @param gene_len Kilo-base-pair length of gene
+#' @param gene_len_org A vector for the length of genes in coding regions
 #' @param max_num Maximum number of nearest neighboring cells
 #' @param scale_factor Global scale factor for normalizing the nearest neighboring cells
 #' @keywords nearest neighbor
 #' @export
-get_expected_cell <- function(data_count,gene_len,max_num=20,scale_factor=1e6){
+get_expected_cell <- function(data_count,gene_len_org,max_num=20,scale_factor=1e6){
 
   if(max_num > ncol(data_count)){
     max_num <- ncol(data_count)
   }
 
-  gene_len_scale <- ceiling(gene_len/1000)
+  gene_len_scale <- ceiling(gene_len_org/1000)
   data_FPKM <- t(t(data_count/gene_len_scale)*scale_factor/apply(data_count,2,sum))
   data_dist <- as.matrix(dist(t(data_FPKM)))
   data_expect <- matrix(data=NA,ncol=ncol(data_count),nrow=nrow(data_count))
@@ -82,8 +82,9 @@ get_expected_cell <- function(data_count,gene_len,max_num=20,scale_factor=1e6){
 
 ##estimate drop out
 #' @export
-estimate_drop_out <- function(sc_data,sc_data_expect,gene_len,per_tile_beta=4,per_tile_tau=4,alpha_init=c(1,-1),beta_init=c(0.1,0.1,0.1),tau_init=c(0.1,-0.1,-0.1),em_error_par=0.01,em_min_count=1,em_max_count=100,trace_flag=0){
+estimate_drop_out <- function(sc_data,sc_data_expect,gene_len_org,per_tile_beta=4,per_tile_tau=4,alpha_init=c(1,-1),beta_init=c(0.1,0.1,0.1),tau_init=c(0.1,-0.1,-0.1),em_error_par=0.01,em_min_count=1,em_max_count=100,trace_flag=0){
 
+  gene_len <- ceiling(gene_len_org/1000)
   data_observe <- sc_data
 	data_mui <- log(sc_data_expect+1)
 	N_beta <- per_tile_beta
@@ -250,13 +251,13 @@ estimate_drop_out <- function(sc_data,sc_data_expect,gene_len,per_tile_beta=4,pe
 ##estimate drop out wrap up
 #' @importFrom parallel mclapply
 #' @export
-estimate_dropout_main <- function(sc_data_all,sc_data_expect_all,gene_len,ncore=1,per_tile_beta=4,per_tile_tau=4,alpha_init=c(1,-1),beta_init=c(0.1,0.1,0.1),tau_init=c(0.1,-0.1,-0.1),em_error_par=0.01,em_min_count=1,em_max_count=100,trace_flag=0){
+estimate_dropout_main <- function(sc_data_all,sc_data_expect_all,gene_len_org,ncore=1,per_tile_beta=4,per_tile_tau=4,alpha_init=c(1,-1),beta_init=c(0.1,0.1,0.1),tau_init=c(0.1,-0.1,-0.1),em_error_par=0.01,em_min_count=1,em_max_count=100,trace_flag=0){
 
   if(ncore > 1){
-    result <- mclapply(c(1:ncol(sc_data_all)),function(i){estimate_drop_out(sc_data_all[,i],sc_data_expect_all[,i],gene_len,per_tile_beta,per_tile_tau,alpha_init,beta_init,tau_init,em_error_par,em_min_count,em_max_count,trace_flag)},mc.cores=ncore)
+    result <- mclapply(c(1:ncol(sc_data_all)),function(i){estimate_drop_out(sc_data_all[,i],sc_data_expect_all[,i],gene_len_org,per_tile_beta,per_tile_tau,alpha_init,beta_init,tau_init,em_error_par,em_min_count,em_max_count,trace_flag)},mc.cores=ncore)
   }
   else{
-    result <- lapply(c(1:ncol(sc_data_all)),function(i){estimate_drop_out(sc_data_all[,i],sc_data_expect_all[,i],gene_len,per_tile_beta,per_tile_tau,alpha_init,beta_init,tau_init,em_error_par,em_min_count,em_max_count,trace_flag)})
+    result <- lapply(c(1:ncol(sc_data_all)),function(i){estimate_drop_out(sc_data_all[,i],sc_data_expect_all[,i],gene_len_org,per_tile_beta,per_tile_tau,alpha_init,beta_init,tau_init,em_error_par,em_min_count,em_max_count,trace_flag)})
   }
   return(result)
 }
