@@ -80,9 +80,177 @@ get_expected_cell <- function(data_count,gene_len_org,max_num=20,scale_factor=1e
 
 }
 
-##estimate drop out
+##estimate dropout with a small poisson for the dropout component
 #' @export
-estimate_drop_out <- function(sc_data,sc_data_expect,gene_len_org,per_tile_beta=4,per_tile_tau=4,alpha_init=c(1,-1),beta_init=c(0.1,0.1,0.1),tau_init=c(0.1,-0.1,-0.1),em_error_par=0.01,em_min_count=1,em_max_count=100,trace_flag=0){
+estimate_drop_out <- function(sc_data,sc_data_expect,gene_len_org,per_tile_beta=4,per_tile_tau=4,alpha_init=c(1,-1),spois_init=0.1,beta_init=c(0.1,0.1,0.1),tau_init=c(0.1,-0.1,-0.1),em_error_par=0.01,em_min_count=1,em_max_count=100,trace_flag=0){
+  
+  gene_len <- ceiling(gene_len_org/1000)
+  data_observe <- sc_data
+  data_mui <- log(sc_data_expect+1)
+  N_beta <- per_tile_beta
+  N_tau <- per_tile_tau
+  #data_mui_percentile_beta <- quantile(data_mui[which(data_mui>0)],seq(1/N_beta,(N_beta-1)/N_beta,1/N_beta))
+  #data_mui_percentile_tau <- quantile(data_mui[which(data_mui>0)],seq(1/N_tau,(N_tau-1)/N_tau,1/N_tau))
+  data_mui_percentile_beta <- (max(data_mui)/N_beta)*c(1:N_beta)
+  data_mui_percentile_tau <- (max(data_mui)/N_tau)*c(1:N_tau)
+  
+  ##generate spline matrix for beta
+  spline_mat_beta <- matrix(data=0,nrow=N_beta+3,ncol=length(data_observe))
+  spline_mat_beta[1,] <- 1
+  spline_mat_beta[2,] <- data_mui
+  spline_mat_beta[3,] <- data_mui^2
+  spline_mat_beta[4,] <- data_mui^3
+  
+  for(i in 5:(N_beta+3)){
+    select_idx <- which(data_mui > data_mui_percentile_beta[i-4])
+    spline_mat_beta[i,select_idx] <- (data_mui[select_idx]-data_mui_percentile_beta[i-4])^3
+  }
+  
+  ##generate spline matrix for tau
+  spline_mat_tau <- matrix(data=0,nrow=N_tau+3,ncol=length(data_observe))
+  spline_mat_tau[1,] <- 1
+  spline_mat_tau[2,] <- data_mui
+  spline_mat_tau[3,] <- data_mui^2
+  spline_mat_tau[4,] <- data_mui^3
+  
+  for(i in 5:(N_tau+3)){
+    select_idx <- which(data_mui > data_mui_percentile_tau[i-4])
+    spline_mat_tau[i,select_idx] <- (data_mui[select_idx]-data_mui_percentile_tau[i-4])^3
+  }
+  
+  ##generate constrain matrix for beta
+  data_mui_uni <- unique(data_mui)
+  
+  cons_mat <- matrix(data=0,nrow=N_beta+3,ncol=length(data_mui_uni))
+  cons_mat[1,] <- 0
+  cons_mat[2,] <- 1
+  cons_mat[3,] <- 2*data_mui_uni
+  cons_mat[4,] <- 3*data_mui_uni^2
+  
+  for(i in 5:(N_beta+3)){
+    select_idx <- which(data_mui_uni > data_mui_percentile_beta[i-4])
+    cons_mat[i,select_idx] <- 3*(data_mui_uni[select_idx]-data_mui_percentile_beta[i-4])^2
+  }
+  
+  ##initialize parameters
+  beta_k <- c(beta_init,rep(0,N_beta))
+  tau_k <- c(tau_init,rep(0,N_tau))
+  alpha_k <- alpha_init
+  spois_k <- spois_init
+  lamda_k <- exp(colSums(beta_k*spline_mat_beta))
+  phi_k <- exp(colSums(tau_k*spline_mat_tau))
+  step_count <- 1
+  flag <- 0
+  logLik_trace <- matrix(data=NA,nrow=em_max_count,ncol=2)
+  em_trace <- 1
+  em_trace_count <- 1
+  alpha_trace <- matrix(data=NA,nrow=em_max_count,ncol=2)
+  spois_trace <- matrix(data=NA,nrow=em_max_count,ncol=1)
+  beta_trace <- matrix(data=NA,nrow=em_max_count,ncol=length(beta_k))
+  tau_trace <- matrix(data=NA,nrow=em_max_count,ncol=length(tau_k))
+  
+  while(flag==0 && step_count <= em_max_count){
+    
+    cat(step_count, " of maximum ", em_max_count,"EM steps\n")
+    flush.console()
+    ##E step
+    pi_k <- 1/(1+exp(-alpha_k[1]-alpha_k[2]*data_mui))
+    drop_out_z_kp1 <- pi_k*dpois(data_observe,spois_k)/(pi_k*dpois(data_observe,spois_k) + (1-pi_k)*(1/(1+gene_len*lamda_k*phi_k))^(1/phi_k))
+    drop_out_z_kp1[is.nan(drop_out_z_kp1)] <- 1
+    
+    logLik_trace[step_count,2] <- sum(drop_out_z_kp1*((alpha_k[1]+alpha_k[2]*data_mui) - log(1+exp(alpha_k[1]+alpha_k[2]*data_mui)) + dpois(data_observe,spois_k,log=TRUE)) + (1-drop_out_z_kp1)*(-log(1+exp(alpha_k[1]+alpha_k[2]*data_mui)))) + sum((lgamma(data_observe+1/phi_k)-lgamma(1/phi_k)-(data_observe+1/phi_k)*log(1+gene_len*lamda_k*phi_k)+data_observe*log(lamda_k*phi_k))*(1-drop_out_z_kp1)) + sum((1-drop_out_z_kp1)*(data_observe*log(gene_len)-lgamma(data_observe+1)))
+    
+    ##M step for alpha
+    logi_fun <- function(alpha_est,drop_out_z_kp1_in,data_mui_in,data_observe_in){
+      output <- sum(drop_out_z_kp1_in*((alpha_est[1]+alpha_est[2]*data_mui_in) - log(1+exp(alpha_est[1]+alpha_est[2]*data_mui_in)) + dpois(data_observe_in,alpha_est[3],log=TRUE)) + (1-drop_out_z_kp1_in)*(-log(1+exp(alpha_est[1]+alpha_est[2]*data_mui_in))))
+      return(output)
+    }
+    
+    opt_result_logi <- constrOptim(c(alpha_k,spois_k), f = logi_fun, grad = NULL, ui = rbind(c(0,0,1),c(0,0,-1)), ci = c(0,-1), control = list(fnscale = -1), drop_out_z_kp1_in = drop_out_z_kp1, data_mui_in = data_mui, data_observe_in = data_observe)
+    alpha_k <- opt_result_logi$par[1:2]
+    spois_k <- opt_result_logi$par[3]
+    
+    ##M step for beta
+    spline_fun <- function(param_est,beta_k_in,spline_mat_beta_in,spline_mat_tau_in,data_mui_in,drop_out_z_kp1_in,data_observe_in,gene_len_in){
+      beta_est <- param_est[c(1:length(beta_k_in))]
+      tau_est <- param_est[-c(1:length(beta_k_in))]
+      
+      sc_lamda <- exp(colSums(beta_est*spline_mat_beta_in))
+      sc_phi <- exp(colSums(tau_est*spline_mat_tau_in))
+      
+      output <- sum((lgamma(data_observe_in+1/sc_phi)-lgamma(1/sc_phi)-(data_observe_in+1/sc_phi)*log(1+gene_len_in*sc_lamda*sc_phi)+data_observe_in*log(sc_lamda*sc_phi))*(1-drop_out_z_kp1_in))
+      return(output)
+    }
+    
+    if(em_trace == 0){
+      ##monotonic contrain on lamda
+      if(em_trace_count == 1){
+        beta_k <- c(beta_init,rep(0,N_beta))
+      }
+      opt_result <- constrOptim(c(beta_k,tau_k), f = spline_fun, grad = NULL, ui = t(rbind(cons_mat,matrix(data=0,nrow=N_tau+3,ncol=ncol(cons_mat)))), ci = rep(0,ncol(cons_mat)), control = list(fnscale = -1), beta_k_in = beta_k, spline_mat_beta_in = spline_mat_beta, spline_mat_tau_in = spline_mat_tau, data_mui_in = data_mui, drop_out_z_kp1_in = drop_out_z_kp1, data_observe_in = data_observe, gene_len_in = gene_len)
+      em_trace_count <- em_trace_count + 1
+    }else{
+      ##without constrain on lamda
+      opt_result <- optim(c(beta_k,tau_k), fn = spline_fun, gr = NULL, beta_k,spline_mat_beta,spline_mat_tau,data_mui,drop_out_z_kp1,data_observe,gene_len,method = "Nelder-Mead",control = list(fnscale = -1))
+    }
+    
+    param_k <- opt_result$par
+    beta_k <- param_k[c(1:length(beta_k))]
+    tau_k <- param_k[-c(1:length(beta_k))]
+    
+    lamda_k <- exp(colSums(beta_k*spline_mat_beta))
+    phi_k <- exp(colSums(tau_k*spline_mat_tau))
+    
+    logLik_trace[step_count,1] <- opt_result_logi$value + opt_result$value + sum((1-drop_out_z_kp1)*(data_observe*log(gene_len)-lgamma(data_observe+1)))
+    
+    alpha_trace[step_count,] <- alpha_k
+    spois_trace[step_count,] <- spois_k
+    beta_trace[step_count,] <- beta_k
+    tau_trace[step_count,] <- tau_k
+    
+    ##stop if converged
+    if(step_count > em_min_count && em_trace_count > 2 && ((abs((logLik_trace[step_count,1] - logLik_trace[step_count-1,1])/logLik_trace[step_count-1,1]) < em_error_par) || (logLik_trace[step_count,1] < logLik_trace[step_count-1,1]))){
+      flag <- 1
+      message('EM converged in ',step_count,' steps')
+      flush.console()
+    }
+    
+    ##switch to constrOptim
+    if(step_count > em_min_count && em_trace == 1 && ((abs((logLik_trace[step_count,1] - logLik_trace[step_count-1,1])/logLik_trace[step_count-1,1]) < em_error_par) || (logLik_trace[step_count,1] < logLik_trace[step_count-1,1]))){
+      em_trace <- 0
+    }
+    
+    step_count <- step_count + 1
+  }
+  
+  alpha_out <- alpha_trace[step_count-1,]
+  spois_out <- spois_trace[step_count-1,]
+  beta_out <- beta_trace[step_count-1,]
+  tau_out <- tau_trace[step_count-1,]
+  
+  lamda_out <- exp(colSums(beta_out*spline_mat_beta))
+  phi_out <- exp(colSums(tau_out*spline_mat_tau))
+  pi_out <- 1/(1+exp(-alpha_out[1]-alpha_out[2]*data_mui))
+  
+  drop_out_z_out <- pi_out*dpois(data_observe,spois_out)/(pi_out*dpois(data_observe,spois_out) + (1-pi_out)*(1/(1+gene_len*lamda_out*phi_out))^(1/phi_out))
+  
+  ##get true expression
+  data_true_out <- ((data_observe*phi_out+1)/(gene_len*phi_out+1/lamda_out))*(1 - drop_out_z_out) + spois_out*drop_out_z_out
+  
+  if(trace_flag==1){
+    return(list(data_true=data_true_out,alpha_trace=alpha_trace,spois_trace=spois_trace,beta_trace=beta_trace,tau_trace=tau_trace,Loglik_trace=logLik_trace,
+                spline_knot_beta_log=data_mui_percentile_beta,spline_knot_tau_log=data_mui_percentile_tau,post_weight=drop_out_z_out))
+  }
+  else{
+    return(list(data_true=data_true_out,alpha_prior=alpha_out,spois_prior=spois_out,beta_prior=beta_out,tau_prior=tau_out,spline_knot_beta_log=data_mui_percentile_beta,
+                spline_knot_tau_log=data_mui_percentile_tau,post_weight=drop_out_z_out))
+  }
+  
+}
+
+##estimate dropout with zero for the dropout component
+#' @export
+estimate_drop_out_zero <- function(sc_data,sc_data_expect,gene_len_org,per_tile_beta=4,per_tile_tau=4,alpha_init=c(1,-1),beta_init=c(0.1,0.1,0.1),tau_init=c(0.1,-0.1,-0.1),em_error_par=0.01,em_min_count=1,em_max_count=100,trace_flag=0){
 
   gene_len <- ceiling(gene_len_org/1000)
   data_observe <- sc_data
