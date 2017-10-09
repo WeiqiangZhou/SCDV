@@ -156,7 +156,7 @@ estimate_drop_out <- function(sc_data,sc_data_expect,gene_len_org,per_tile_beta=
     ##E step
     pi_k <- 1/(1+exp(-alpha_k[1]-alpha_k[2]*data_mui))
     drop_out_z_kp1 <- pi_k*dpois(data_observe,spois_k)/(pi_k*dpois(data_observe,spois_k) + (1-pi_k)*(1/(1+gene_len*lamda_k*phi_k))^(1/phi_k))
-    drop_out_z_kp1[is.nan(drop_out_z_kp1)] <- 1
+    drop_out_z_kp1[is.nan(drop_out_z_kp1)] <- 0
     
     logLik_trace[step_count,2] <- sum(drop_out_z_kp1*((alpha_k[1]+alpha_k[2]*data_mui) - log(1+exp(alpha_k[1]+alpha_k[2]*data_mui)) + dpois(data_observe,spois_k,log=TRUE)) + (1-drop_out_z_kp1)*(-log(1+exp(alpha_k[1]+alpha_k[2]*data_mui)))) + sum((lgamma(data_observe+1/phi_k)-lgamma(1/phi_k)-(data_observe+1/phi_k)*log(1+gene_len*lamda_k*phi_k)+data_observe*log(lamda_k*phi_k))*(1-drop_out_z_kp1)) + sum((1-drop_out_z_kp1)*(data_observe*log(gene_len)-lgamma(data_observe+1)))
     
@@ -233,6 +233,7 @@ estimate_drop_out <- function(sc_data,sc_data_expect,gene_len_org,per_tile_beta=
   pi_out <- 1/(1+exp(-alpha_out[1]-alpha_out[2]*data_mui))
   
   drop_out_z_out <- pi_out*dpois(data_observe,spois_out)/(pi_out*dpois(data_observe,spois_out) + (1-pi_out)*(1/(1+gene_len*lamda_out*phi_out))^(1/phi_out))
+  drop_out_z_out[is.nan(drop_out_z_out)] <- 0
   
   ##get true expression
   data_true_out <- ((data_observe*phi_out+1)/(gene_len*phi_out+1/lamda_out))*(1 - drop_out_z_out) + spois_out*drop_out_z_out
