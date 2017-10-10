@@ -1,6 +1,7 @@
 Package: SCDV
-Title: SCDV
-Version: 0.0.1
+Title: Single cell differential variance analysis
+Version: 1.0.0
+Date: 2017-10-10
 Authors@R: person("Weiqiang", "Zhou", email = "kenandzhou@hotmail.com", role = c("aut", "cre"))
 Description: SCDV.
 Depends: R (>= 3.2.3)
