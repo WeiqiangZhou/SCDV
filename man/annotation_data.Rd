@@ -5,7 +5,7 @@
 \alias{annotation_data}
 \title{Annotation dataset
 Dataset contains gene length for human GRCh37 and mouse GRCm38 genome and low variability genes.}
-\format{An object of class \code{list} of length 3.}
+\format{An object of class \code{list} of length 4.}
 \usage{
 data(annotation_data)
 }
@@ -18,5 +18,6 @@ data(annotation_data)
 gene_len_GRCh37 <- annotation_data[["gene_len_GRCh37"]]
 gene_len_GRCm38 <- annotation_data[["gene_len_GRCm38"]]
 LV_gene_human <- annotation_data[["LV_gene_human"]]
+LV_gene_mouse <- annotation_data[["LV_gene_mouse"]]
 }
 \keyword{datasets}

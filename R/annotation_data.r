@@ -7,4 +7,5 @@
 #' gene_len_GRCh37 <- annotation_data[["gene_len_GRCh37"]]
 #' gene_len_GRCm38 <- annotation_data[["gene_len_GRCm38"]]
 #' LV_gene_human <- annotation_data[["LV_gene_human"]]
+#' LV_gene_mouse <- annotation_data[["LV_gene_mouse"]]
 "annotation_data"
