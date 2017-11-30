@@ -313,8 +313,9 @@ permutation_test_mean <- function(data_1,weight_1,data_2,weight_2,num_permute=10
 
   set.seed(12345)
   sample_mat <- t(sapply(1:num_permute,function(i) sample(group_id)))
-
-  permut <- sapply(1:num_permute,function(id) {
+  permut <- rep(NA,num_permute)
+  
+  for(id in 1:num_permute){
 
     sample_group <- sample_mat[id,]
     sample_data_1 <- data_combine[sample_group==1]
@@ -326,9 +327,9 @@ permutation_test_mean <- function(data_1,weight_1,data_2,weight_2,num_permute=10
     stat_2 <- get_weighted_stat(sample_data_2,sample_weight_2)
     n1 <- sum(sample_weight_1)
     n2 <- sum(sample_weight_2)
-    (stat_1$mean_weighted - stat_2$mean_weighted)/sqrt((1/n1+1/n2)*((n1-1)*stat_1$var_weighted+(n2-1)*stat_2$var_weighted)/(n1+n2-2))
+    permut[id] <- (stat_1$mean_weighted - stat_2$mean_weighted)/sqrt((1/n1+1/n2)*((n1-1)*stat_1$var_weighted+(n2-1)*stat_2$var_weighted)/(n1+n2-2))
 
-    })
+  }
 
   pval_greater <- mean(test_org < permut)
   pval_less <- mean(test_org > permut)
@@ -366,8 +367,9 @@ permutation_test_var <- function(data_1,weight_1,data_2,weight_2,num_permute=100
 
   set.seed(12345)
   sample_mat <- t(sapply(1:num_permute,function(i) sample(group_id)))
-
-  permut <- sapply(1:num_permute,function(id) {
+  permut <- rep(NA,num_permute)
+  
+  for(id in 1:num_permute){
 
     sample_group <- sample_mat[id,]
     sample_data_1 <- data_residual_combine[sample_group==1]
@@ -376,9 +378,9 @@ permutation_test_var <- function(data_1,weight_1,data_2,weight_2,num_permute=100
     sample_weight_2 <- weight_combine[sample_group==2]
     n1 <- sum(sample_weight_1)
     n2 <- sum(sample_weight_2)
-    (sum(sample_weight_1*(sample_data_1^2))/(n1 - 1)) / (sum(sample_weight_2*(sample_data_2^2))/(n2 - 1))
+    permut[id] <- (sum(sample_weight_1*(sample_data_1^2))/(n1 - 1)) / (sum(sample_weight_2*(sample_data_2^2))/(n2 - 1))
 
-  })
+  }
 
   pval_greater <- mean(test_org < permut)
   pval_less <- mean(test_org > permut)
