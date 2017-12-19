@@ -403,6 +403,51 @@ test_var_main <- function(data_1_all,weight_1_all,data_2_all,weight_2_all,num_pe
   return(result)
 }
 
+##permutation test for anova
+#' @export
+permutation_test_anova <- function(data_in,weight_in,group_idx,num_permute=1000){
+  
+  stat_all <- get_weighted_stat(data_in,weight_in)
+  stat_group <- lapply(unique(group_idx),function(x) {get_weighted_stat(data_in[group_idx==x],weight_in[group_idx==x])})
+  
+  n_all <- length(data_in)
+  
+  totalSS <- sum(weight_in*(data_in - stat_all$mean_weighted)^2)
+  groupSS <- sapply(unique(group_idx),function(x) {sum(weight_in[group_idx==x]*(data_in[group_idx==x] - stat_group[[which(unique(group_idx)==x)]]$mean_weighted)^2)})
+  
+  test_org <- ((totalSS-sum(groupSS))/(length(unique(group_idx)) - 1 ))/(sum(groupSS)/(n_all - length(unique(group_idx))))
+  
+  set.seed(12345)
+  sample_mat <- t(sapply(1:num_permute,function(i) sample(group_idx)))
+  permut <- rep(NA,num_permute)
+  
+  for(id in 1:num_permute){
+    
+    sample_group <- sample_mat[id,]
+    stat_group <- lapply(unique(sample_group),function(x) {get_weighted_stat(data_in[sample_group==x],weight_in[sample_group==x])})
+    groupSS <- sapply(unique(sample_group),function(x) {sum(weight_in[sample_group==x]*(data_in[sample_group==x] - stat_group[[which(unique(sample_group)==x)]]$mean_weighted)^2)})
+    permut[id] <- ((totalSS-sum(groupSS))/(length(unique(sample_group)) - 1 ))/(sum(groupSS)/(n_all - length(unique(sample_group))))
+
+  }
+  
+  pval <- mean(test_org < permut)
+  return(list(statistics=test_org,pval=pval))
+}
+
+##anova test wrap up
+#' @importFrom parallel mclapply
+#' @export
+test_anova_main <- function(data_all,weight_all,group_idx,num_permute=1000,ncore=1){
+  
+  if(ncore > 1){
+    result <- mclapply(c(1:nrow(data_all)),function(i){permutation_test_anova(data_all[i,],weight_all[i,],group_idx,num_permute)},mc.cores=ncore)
+  }
+  else{
+    result <- lapply(c(1:nrow(data_all)),function(i){permutation_test_anova(data_all[i,],weight_all[i,],group_idx,num_permute)})
+  }
+  return(result)
+}
+
 ##get var, mean, and fitted var
 #' @export
 get_var_fit <- function(input_data,data_weight,span_param = 0.5){
@@ -417,8 +462,6 @@ get_var_fit <- function(input_data,data_weight,span_param = 0.5){
 	fitted_data[which(fitted_data < 0)] <- 0
 	return(list(var_expect=fitted_data,mean=log2(data_mean_weighted + 1),var=log2(data_var_weighted + 1)))
 }
-
-
 
 ##get estimates
 #' @export
@@ -460,7 +503,7 @@ is.infinite.data.frame <- function(obj){
 
 ##permute function
 #' @export
-scdv_permute <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,var_expect_treatment,var_expect_control,per_time = 1000){
+scdv_permute <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,var_expect_treatment,var_expect_control,num_permute = 1000){
 
 	df_treatment <- ncol(treatment_data)
 	df_control <- ncol(control_data)
@@ -486,13 +529,13 @@ scdv_permute <- function(treatment_data,treatment_data_weight,control_data,contr
 
 	combine_weight <- cbind(treatment_data_weight,control_data_weight)
 
-	treatment_data_sf_per <- matrix(data=NA,nrow=nrow(treatment_data),ncol=per_time)
-	control_data_sf_per <- matrix(data=NA,nrow=nrow(control_data),ncol=per_time)
+	treatment_data_sf_per <- matrix(data=NA,nrow=nrow(treatment_data),ncol=num_permute)
+	control_data_sf_per <- matrix(data=NA,nrow=nrow(control_data),ncol=num_permute)
 
-	pb = txtProgressBar(min = 0, max = per_time, initial = 0, style = 3)
+	pb = txtProgressBar(min = 0, max = num_permute, initial = 0, style = 3)
 
 	set.seed(12345)
-	for(i in 1:per_time){
+	for(i in 1:num_permute){
 
 		setTxtProgressBar(pb,i)
 
@@ -513,7 +556,7 @@ scdv_permute <- function(treatment_data,treatment_data_weight,control_data,contr
 ##permute function multi-core
 #' @importFrom parallel mclapply
 #' @export
-scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,var_expect_treatment,var_expect_control,per_time = 1000,ncore = 4){
+scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,var_expect_treatment,var_expect_control,num_permute = 1000,ncore = 4){
 
 	df_treatment <- ncol(treatment_data)
 	df_control <- ncol(control_data)
@@ -539,8 +582,8 @@ scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,co
 
 	combine_weight <- cbind(treatment_data_weight,control_data_weight)
 
-	treatment_data_sf_per <- matrix(data=NA,nrow=nrow(treatment_data),ncol=per_time)
-	control_data_sf_per <- matrix(data=NA,nrow=nrow(control_data),ncol=per_time)
+	treatment_data_sf_per <- matrix(data=NA,nrow=nrow(treatment_data),ncol=num_permute)
+	control_data_sf_per <- matrix(data=NA,nrow=nrow(control_data),ncol=num_permute)
 
 	set.seed(12345)
 
@@ -556,9 +599,9 @@ scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,co
 		return(list(treatment_data_sf_per_temp=treatment_data_sf_per_temp,control_data_sf_per_temp=control_data_sf_per_temp))
 	}
 
-	output_list <- mclapply(c(1:per_time),permute_fun, mc.cores=ncore)
+	output_list <- mclapply(c(1:num_permute),permute_fun, mc.cores=ncore)
 
-	for(i in 1:per_time){
+	for(i in 1:num_permute){
 		treatment_data_sf_per[,i] <- output_list[[i]]$treatment_data_sf_per_temp
 		control_data_sf_per[,i] <- output_list[[i]]$control_data_sf_per_temp
 	}
@@ -570,7 +613,7 @@ scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,co
 ##main function
 #' @importFrom parallel mclapply
 #' @export
-scdv_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,per_time=1000,span_param=0.5,ncore=1){
+scdv_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,num_permute=1000,span_param=0.5,ncore=1){
 
 	message('Estimating variance scale factor')
 	flush.console()
@@ -579,10 +622,10 @@ scdv_main <- function(treatment_data,treatment_data_weight,control_data,control_
 	message('Permutation process to obtain empirical p-value')
 	flush.console()
 	if(ncore > 1){
-		permute_result <- scdv_permute_mc(treatment_data,treatment_data_weight,control_data,control_data_weight,result$var_expect_treatment,result$var_expect_control,per_time,ncore)
+		permute_result <- scdv_permute_mc(treatment_data,treatment_data_weight,control_data,control_data_weight,result$var_expect_treatment,result$var_expect_control,num_permute,ncore)
 	}
 	else{
-		permute_result <- scdv_permute(treatment_data,treatment_data_weight,control_data,control_data_weight,result$var_expect_treatment,result$var_expect_control,per_time)
+		permute_result <- scdv_permute(treatment_data,treatment_data_weight,control_data,control_data_weight,result$var_expect_treatment,result$var_expect_control,num_permute)
 	}
 
 	sf_diff_pval <- rep(NA,nrow(treatment_data))
@@ -594,9 +637,9 @@ scdv_main <- function(treatment_data,treatment_data_weight,control_data,control_
 	for(i in 1:nrow(treatment_data)){
 		sf_diff_null <- permute_result$treatment_data_sf_per[i,] - permute_result$control_data_sf_per[i,]
 
-		sf_diff_pval[i] <- length(which(sf_diff_null >= sf_diff[i]))/per_time
-		sf_diff_pval_alt[i] <- length(which(-sf_diff_null >= -sf_diff[i]))/per_time
-		sf_diff_pval_ts[i] <- length(which(abs(sf_diff_null) >= abs(sf_diff[i])))/per_time
+		sf_diff_pval[i] <- length(which(sf_diff_null >= sf_diff[i]))/num_permute
+		sf_diff_pval_alt[i] <- length(which(-sf_diff_null >= -sf_diff[i]))/num_permute
+		sf_diff_pval_ts[i] <- length(which(abs(sf_diff_null) >= abs(sf_diff[i])))/num_permute
 	}
 
 	sf_diff_fdr <- p.adjust(sf_diff_pval,method="fdr")
