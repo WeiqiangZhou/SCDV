@@ -22,14 +22,14 @@ library(SCDV)
 data_treatment_count <- input_data_treatment
 data_control_count <- input_data_control
 
-##get gene length information
-gene_len_all <- annotation_data[["gene_len_GRCh37"]] 
-##change to "gene_len_all <- annotation_data[["gene_len_GRCm38"]]" for mouse data
+##get gene information
+gene_info <- annotation_data[["gene_len_GRCh37"]] 
+##change to "gene_info <- annotation_data[["gene_len_GRCm38"]]" for mouse data
 
-row_match_gene_length <- match(rownames(data_treatment_count),gene_len_all[,1])
-
-gene_len <- gene_len_all[row_match_gene_length,2]
-names(gene_len) <- gene_len_all[row_match_gene_length,1]
+match_gene_idx <- match(rownames(data_treatment_count),gene_info[,1])
+gene_len <- gene_info[match_gene_idx,2]
+names(gene_len) <- gene_info[match_gene_idx,1]
+match_gene_name <- gene_info[match_gene_idx,-2]
 
 ##get neighboring cells
 neighbor_result_treatment <- get_expected_cell(data_treatment_count,gene_len)
