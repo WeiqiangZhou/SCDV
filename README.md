@@ -87,7 +87,7 @@ write.csv(data.frame(match_gene_name,diff_expr),file="diff_expr.csv",row.names=F
 ```
 
 ### Q&A
-#### What's the assumptions of the tests in SCDV?
+#### What's the assumption of the tests in SCDV?
 All the tests in SCDV are permutation-based tests. These are non-parametric tests that do not rely on strong parametric assumptions.
 
 #### What's the difference between hyper-variability test and variability test?
