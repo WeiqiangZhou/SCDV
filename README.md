@@ -99,7 +99,7 @@ The variance of a gene in single-cell RNA-seq data has been showed to be highly 
 Use `?scdv_main`, `?test_var_main`, and `?test_mean_main` in R to check the description of the return values in the help page of the package.
 
 #### What is "house keeping genes"?
-The "house keeping genes" are genes that show low variability and consistent expression in different cell types which are obtained using recount2 (https://jhubiostatistics.shinyapps.io/recount/).
+The "house keeping genes" are genes that show low variability but consistently expressed in different cell types which are obtained using recount2 (https://jhubiostatistics.shinyapps.io/recount/).
 
 #### How to cite SCDV?
 Use `citation("SCDV")` in R to get the citation information.
