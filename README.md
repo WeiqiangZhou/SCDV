@@ -65,41 +65,41 @@ control_data_adjust <- t(t(control_data_true)*library_scale[-c(1:length(output_t
 #### Step 3. Perform differential analysis
 SCDV supports three types of tests: 
 
-##### 1. differential hyper-variability test
+#### 1. differential hyper-variability test
 ```
 ##set multi-core using ncore, if not using multi-core, set ncore=1
 diff_disper <- scdv_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,span_param=0.5,ncore=6)
 write.csv(cbind(match_gene_name,diff_disper),file="diff_hypervar.csv",row.names=FALSE)
 ```
 
-##### 2. differential variability test
+#### 2. differential variability test
 ```
 ##set multi-core using ncore, if not using multi-core, set ncore=1
 diff_var <- test_var_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,ncore=6)
 write.csv(data.frame(match_gene_name,diff_var),file="diff_var.csv",row.names=FALSE)
 ```
 
-##### 3. differential mean test
+#### 3. differential mean test
 ```
 ##set multi-core using ncore, if not using multi-core, set ncore=1
 diff_expr <- test_mean_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,ncore=6)
 write.csv(data.frame(match_gene_name,diff_expr),file="diff_expr.csv",row.names=FALSE)
 ```
 
-###Q&A
-##### What's the assumptions of the tests in SCDV?
+### Q&A
+#### What's the assumptions of the tests in SCDV?
 All the tests in SCDV are permutation-based tests. These are non-parametric tests that do not rely on strong parametric assumptions.
 
-##### What's the difference between hyper-variability test and variability test?
+#### What's the difference between hyper-variability test and variability test?
 The major difference is they test different types of variance.
 
 The variance of a gene in single-cell RNA-seq data has been showed to be highly correlated with the mean expression of the gene. To remove such "mean effects", SCDV calculates the hyper-variability statistics which is a ratio of the observed variance of a gene to the expected variance at the same mean expression level.
 
-##### What are the return values of each test?
+#### What are the return values of each test?
 Use ?scdv_main, ?test_var_main, and ?test_mean_main in R to check the description of the return values in the help page of the package.
 
-##### What is "house keeping genes"?
+#### What is "house keeping genes"?
 The "house keeping genes" are genes that show low variability and consistent expression in different cell types which are obtained using recount2 (https://jhubiostatistics.shinyapps.io/recount/).
 
-###Contact
+### Contact
 Please contact Weiqiang Zhou: wzhou14@jhu.edu for questions and suggestions.
