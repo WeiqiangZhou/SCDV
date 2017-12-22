@@ -96,13 +96,13 @@ The major difference is they test different types of variance.
 The variance of a gene in single-cell RNA-seq data has been showed to be highly correlated with the mean expression of the gene. To remove such "mean effects", SCDV calculates the hyper-variability statistics which is a ratio of the observed variance of a gene to the expected variance at the same mean expression level.
 
 #### What are the return values of each test?
-Use ?scdv_main, ?test_var_main, and ?test_mean_main in R to check the description of the return values in the help page of the package.
+Use `?scdv_main`, `?test_var_main`, and `?test_mean_main` in R to check the description of the return values in the help page of the package.
 
 #### What is "house keeping genes"?
 The "house keeping genes" are genes that show low variability and consistent expression in different cell types which are obtained using recount2 (https://jhubiostatistics.shinyapps.io/recount/).
 
 #### How to cite SCDV?
-Use citation("SCDV") in R to get the citation information.
+Use `citation("SCDV")` in R to get the citation information.
 
 ### Contact
 Please contact **Weiqiang Zhou**: wzhou14@jhu.edu for questions and suggestions.
