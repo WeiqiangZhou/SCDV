@@ -81,8 +81,11 @@ get_expected_cell <- function(data_count,gene_len_org,max_num=20,scale_factor=1e
 }
 
 ##estimate dropout with a small poisson for the dropout component
+#' This function is used for estimating dropout probability.
+#' @param sc_data Input count matrix.
+#' @param sc_data_expect Gene expression from the pool neighboring cells obtained by function get_expected_cell
 #' @export
-estimate_drop_out <- function(sc_data,sc_data_expect,gene_len_org,per_tile_beta=4,per_tile_tau=4,alpha_init=c(1,-1),spois_init=0.1,beta_init=c(0.1,0.1,0.1),tau_init=c(0.1,-0.1,-0.1),em_error_par=0.01,em_min_count=1,em_max_count=100,trace_flag=0){
+estimate_drop_out <- function(sc_data,sc_data_expect,gene_len_org,per_tile_beta=6,per_tile_tau=6,alpha_init=c(1,-1),spois_init=0.1,beta_init=c(0.1,0.1,0.1),tau_init=c(0.1,-0.1,-0.1),em_error_par=0.01,em_min_count=1,em_max_count=30,trace_flag=0){
   
   gene_len <- ceiling(gene_len_org/1000)
   data_observe <- sc_data
@@ -252,7 +255,7 @@ estimate_drop_out <- function(sc_data,sc_data_expect,gene_len_org,per_tile_beta=
 ##estimate drop out wrap up
 #' @importFrom parallel mclapply
 #' @export
-estimate_dropout_main <- function(sc_data_all,sc_data_expect_all,gene_len_org,ncore=1,per_tile_beta=4,per_tile_tau=4,alpha_init=c(1,-1),spois_init=0.1,beta_init=c(0.1,0.1,0.1),tau_init=c(0.1,-0.1,-0.1),em_error_par=0.01,em_min_count=1,em_max_count=100,trace_flag=0){
+estimate_dropout_main <- function(sc_data_all,sc_data_expect_all,gene_len_org,ncore=1,per_tile_beta=6,per_tile_tau=6,alpha_init=c(1,-1),spois_init=0.1,beta_init=c(0.1,0.1,0.1),tau_init=c(0.1,-0.1,-0.1),em_error_par=0.01,em_min_count=1,em_max_count=30,trace_flag=0){
 
   if(ncore > 1){
     result <- mclapply(c(1:ncol(sc_data_all)),function(i){estimate_drop_out(sc_data_all[,i],sc_data_expect_all[,i],gene_len_org,per_tile_beta,per_tile_tau,alpha_init,spois_init,beta_init,tau_init,em_error_par,em_min_count,em_max_count,trace_flag)},mc.cores=ncore)
@@ -339,17 +342,43 @@ permutation_test_mean <- function(data_1,weight_1,data_2,weight_2,num_permute=10
 }
 
 ##test differential expression wrap up
+#' @title Differential mean test
+#' @description This function is used for testing differential gene expression.
+#' @param treatment_data Normalized count data for the treatment group
+#' @param treatment_data_weight 1 - dropout probability for the treatment group
+#' @param control_data Normalized count data for the control group
+#' @param control_data_weight 1 - dropout probability for the control group
+#' @param num_permute Number of permutation performed in the test
+#' @param ncore Number of CPU cores used in the test
+#' @return 
+#'  \item{statistics}{The weighted t-statistics}
+#'  \item{pval_greater}{P-values for testing whether the expression of each gene in the treamtment group is larger than that in the control group}
+#'  \item{fdr_greater}{Adjusted p-values (FDR) of pval_greater}
+#'  \item{pval_less}{P-values for testing whether the expression of each gene in the treamtment group is smaller than that in the control group}
+#'  \item{fdr_less}{Adjusted p-values (FDR) of pval_less}
+#'  \item{pval_ts}{P-values for testing whether the expression of each gene in the treamtment group is not equal to that in the control group}
+#'  \item{fdr_ts}{Adjusted p-values (FDR) of pval_ts}
+#' @keywords differential mean test
+#' @examples 
+#' \dontrun{
+#' diff_expr <- test_mean_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,ncore=6)
+#' write.csv(data.frame(match_gene_name,diff_expr),file="diff_expr.csv",row.names=FALSE)
+#' }
 #' @importFrom parallel mclapply
 #' @export
-test_mean_main <- function(data_1_all,weight_1_all,data_2_all,weight_2_all,num_permute=1000,ncore=1){
+test_mean_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,num_permute=1000,ncore=1){
   
   if(ncore > 1){
-    result <- mclapply(c(1:nrow(data_1_all)),function(i){permutation_test_mean(data_1_all[i,],weight_1_all[i,],data_2_all[i,],weight_2_all[i,],num_permute)},mc.cores=ncore)
+    result <- mclapply(c(1:nrow(treatment_data)),function(i){permutation_test_mean(treatment_data[i,],treatment_data_weight[i,],control_data[i,],control_data_weight[i,],num_permute)},mc.cores=ncore)
   }
   else{
-    result <- lapply(c(1:nrow(data_1_all)),function(i){permutation_test_mean(data_1_all[i,],weight_1_all[i,],data_2_all[i,],weight_2_all[i,],num_permute)})
+    result <- lapply(c(1:nrow(treatment_data)),function(i){permutation_test_mean(treatment_data[i,],treatment_data_weight[i,],control_data[i,],control_data_weight[i,],num_permute)})
   }
-  return(result)
+  
+  result_combine <- do.call(rbind,result)
+  result_combine <- apply(result_combine,2,unlist)
+  result_out <- data.frame(result_combine,fdr_greater=p.adjust(result_combine[,2],method="fdr"),fdr_less=p.adjust(result_combine[,3],method="fdr"),fdr_ts=p.adjust(result_combine[,4],method="fdr"))
+  return(result_out)
 }
 
 ##permutation test for differential variance
@@ -390,17 +419,43 @@ permutation_test_var <- function(data_1,weight_1,data_2,weight_2,num_permute=100
 }
 
 ##test differential variance wrap up
+#' @title Differential variability test
+#' @description This function is used for testing differential variability.
+#' @param treatment_data Normalized count data for the treatment group
+#' @param treatment_data_weight 1 - dropout probability for the treatment group
+#' @param control_data Normalized count data for the control group
+#' @param control_data_weight 1 - dropout probability for the control group
+#' @param num_permute Number of permutation performed in the test
+#' @param ncore Number of CPU cores used in the test
+#' @return 
+#'  \item{statistics}{The weighted F-statistics}
+#'  \item{pval_greater}{P-values for testing whether the variability of each gene in the treamtment group is larger than that in the control group}
+#'  \item{fdr_greater}{Adjusted p-values (FDR) of pval_greater}
+#'  \item{pval_less}{P-values for testing whether the variability of each gene in the treamtment group is smaller than that in the control group}
+#'  \item{fdr_less}{Adjusted p-values (FDR) of pval_less}
+#'  \item{pval_ts}{P-values for testing whether the variability of each gene in the treamtment group is not equal to that in the control group}
+#'  \item{fdr_ts}{Adjusted p-values (FDR) of pval_ts}
+#' @keywords differential variability test
+#' @examples 
+#' \dontrun{
+#' diff_var <- test_var_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,ncore=6)
+#' write.csv(data.frame(match_gene_name,diff_var),file="diff_var.csv",row.names=FALSE)
+#' }
 #' @importFrom parallel mclapply
 #' @export
-test_var_main <- function(data_1_all,weight_1_all,data_2_all,weight_2_all,num_permute=1000,ncore=1){
+test_var_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,num_permute=1000,ncore=1){
   
   if(ncore > 1){
-    result <- mclapply(c(1:nrow(data_1_all)),function(i){permutation_test_var(data_1_all[i,],weight_1_all[i,],data_2_all[i,],weight_2_all[i,],num_permute)},mc.cores=ncore)
+    result <- mclapply(c(1:nrow(treatment_data)),function(i){permutation_test_var(treatment_data[i,],treatment_data_weight[i,],control_data[i,],control_data_weight[i,],num_permute)},mc.cores=ncore)
   }
   else{
-    result <- lapply(c(1:nrow(data_1_all)),function(i){permutation_test_var(data_1_all[i,],weight_1_all[i,],data_2_all[i,],weight_2_all[i,],num_permute)})
+    result <- lapply(c(1:nrow(treatment_data)),function(i){permutation_test_var(treatment_data[i,],treatment_data_weight[i,],control_data[i,],control_data_weight[i,],num_permute)})
   }
-  return(result)
+  
+  result_combine <- do.call(rbind,result)
+  result_combine <- apply(result_combine,2,unlist)
+  result_out <- data.frame(result_combine,fdr_greater=p.adjust(result_combine[,2],method="fdr"),fdr_less=p.adjust(result_combine[,3],method="fdr"),fdr_ts=p.adjust(result_combine[,4],method="fdr"))
+  return(result_out)
 }
 
 ##permutation test for anova
@@ -610,7 +665,32 @@ scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,co
 }
 
 
-##main function
+##main function for differential hyper-variability analysis
+#' @title Differential hyper-variability test
+#' @description This function is used for testing differential hyper-variability.
+#' @param treatment_data Normalized count data for the treatment group
+#' @param treatment_data_weight 1 - dropout probability for the treatment group
+#' @param control_data Normalized count data for the control group
+#' @param control_data_weight 1 - dropout probability for the control group
+#' @param num_permute Number of permutation performed in the test
+#' @param span_param The span parameter in loess when fitting the mean-variance curve
+#' @param ncore Number of CPU cores used in the test
+#' @return 
+#'  \item{sf_treatment}{The hyper-variability statistics for the treatment group}
+#'  \item{sf_control}{The hyper-variability statistics for the control group}
+#'  \item{sf_diff}{Difference between sf_treatment and sf_control: sf_treatment - sf_control}
+#'  \item{sf_diff_pval}{P-values for testing whether the hyper-variability of each gene in the treamtment group is larger than that in the control group}
+#'  \item{sf_diff_fdr}{Adjusted p-values (FDR) of sf_diff_pval}
+#'  \item{sf_diff_pval_alt}{P-values for testing whether the hyper-variability of each gene in the treamtment group is smaller than that in the control group}
+#'  \item{sf_diff_fdr_alt}{Adjusted p-values (FDR) of sf_diff_pval_alt}
+#'  \item{sf_diff_pval_ts}{P-values for testing whether the hyper-variability of each gene in the treamtment group is not equal to that in the control group}
+#'  \item{sf_diff_fdr_ts}{Adjusted p-values (FDR) of sf_diff_pval_ts}
+#' @keywords differential hyper-variability test
+#' @examples 
+#' \dontrun{
+#' diff_disper <- scdv_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,span_param=0.5,ncore=6)
+#' write.csv(cbind(match_gene_name,diff_disper),file="diff_hypervar.csv",row.names=FALSE)
+#' }
 #' @importFrom parallel mclapply
 #' @export
 scdv_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,num_permute=1000,span_param=0.5,ncore=1){
@@ -646,6 +726,7 @@ scdv_main <- function(treatment_data,treatment_data_weight,control_data,control_
 	sf_diff_fdr_alt <- p.adjust(sf_diff_pval_alt,method="fdr")
 	sf_diff_fdr_ts <- p.adjust(sf_diff_pval_ts,method="fdr")
 
-	return(list(sf_treatment=result$scale_factor_treatment,sf_control=result$scale_factor_control,sf_diff=sf_diff,sf_diff_pval=sf_diff_pval,sf_diff_fdr=sf_diff_fdr,sf_diff_pval_alt=sf_diff_pval_alt,sf_diff_fdr_alt=sf_diff_fdr_alt,sf_diff_pval_ts=sf_diff_pval_ts,sf_diff_fdr_ts=sf_diff_fdr_ts))
+	result_out <- data.frame(sf_treatment=result$scale_factor_treatment,sf_control=result$scale_factor_control,sf_diff=sf_diff,sf_diff_pval=sf_diff_pval,sf_diff_fdr=sf_diff_fdr,sf_diff_pval_alt=sf_diff_pval_alt,sf_diff_fdr_alt=sf_diff_fdr_alt,sf_diff_pval_ts=sf_diff_pval_ts,sf_diff_fdr_ts=sf_diff_fdr_ts)
+	return(result_out)
 
 }

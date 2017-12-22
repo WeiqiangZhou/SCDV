@@ -1,9 +1,11 @@
 Package: SCDV
 Title: Single cell differential variance analysis
-Version: 1.0.0
+Version: 1.0.1
 Date: 2017-10-10
-Authors@R: person("Weiqiang", "Zhou", email = "kenandzhou@hotmail.com", role = c("aut", "cre"))
+Authors: Weiqiang Zhou, Zhicheng Ji, Hongkai Ji
+Maintainer: Weiqiang Zhou <wzhou14@jhu.edu>
 Description: SCDV.
+URL: https://github.com/WeiqiangZhou/SCDV
 Depends: R (>= 3.2.3)
 License: GPL(>=2)
 Encoding: UTF-8
