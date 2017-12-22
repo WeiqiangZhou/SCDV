@@ -101,5 +101,8 @@ Use ?scdv_main, ?test_var_main, and ?test_mean_main in R to check the descriptio
 #### What is "house keeping genes"?
 The "house keeping genes" are genes that show low variability and consistent expression in different cell types which are obtained using recount2 (https://jhubiostatistics.shinyapps.io/recount/).
 
+#### How to cite SCDV?
+Use citation("SCDV") in R to get the citation information.
+
 ### Contact
 Please contact **Weiqiang Zhou**: wzhou14@jhu.edu for questions and suggestions.
