@@ -254,11 +254,18 @@ estimate_drop_out <- function(sc_data,sc_data_expect,gene_len_org,per_tile_beta=
 
 ##estimate drop out wrap up
 #' @importFrom parallel mclapply
+#' @importFrom parallel splitIndices
 #' @export
 estimate_dropout_main <- function(sc_data_all,sc_data_expect_all,gene_len_org,ncore=1,per_tile_beta=6,per_tile_tau=6,alpha_init=c(1,-1),spois_init=0.1,beta_init=c(0.1,0.1,0.1),tau_init=c(0.1,-0.1,-0.1),em_error_par=0.01,em_min_count=1,em_max_count=30,trace_flag=0){
 
   if(ncore > 1){
-    result <- mclapply(c(1:ncol(sc_data_all)),function(i){estimate_drop_out(sc_data_all[,i],sc_data_expect_all[,i],gene_len_org,per_tile_beta,per_tile_tau,alpha_init,spois_init,beta_init,tau_init,em_error_par,em_min_count,em_max_count,trace_flag)},mc.cores=ncore)
+    N <- ncol(sc_data_all) 
+    iter_list <- splitIndices(N, N/ncore) 
+    result <- list() 
+    for(j in seq_along(iter_list)){ 
+      iter_vec <- iter_list[[j]] 
+      result[iter_vec] <- mclapply(iter_vec,function(i){estimate_drop_out(sc_data_all[,i],sc_data_expect_all[,i],gene_len_org,per_tile_beta,per_tile_tau,alpha_init,spois_init,beta_init,tau_init,em_error_par,em_min_count,em_max_count,trace_flag)},mc.cores=ncore) 
+    }
   }
   else{
     result <- lapply(c(1:ncol(sc_data_all)),function(i){estimate_drop_out(sc_data_all[,i],sc_data_expect_all[,i],gene_len_org,per_tile_beta,per_tile_tau,alpha_init,spois_init,beta_init,tau_init,em_error_par,em_min_count,em_max_count,trace_flag)})
@@ -365,11 +372,18 @@ permutation_test_mean <- function(data_1,weight_1,data_2,weight_2,num_permute=10
 #' write.csv(data.frame(match_gene_name,diff_expr),file="diff_expr.csv",row.names=FALSE)
 #' }
 #' @importFrom parallel mclapply
+#' @importFrom parallel splitIndices
 #' @export
 test_mean_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,num_permute=1000,ncore=1){
   
   if(ncore > 1){
-    result <- mclapply(c(1:nrow(treatment_data)),function(i){permutation_test_mean(treatment_data[i,],treatment_data_weight[i,],control_data[i,],control_data_weight[i,],num_permute)},mc.cores=ncore)
+    N <- nrow(treatment_data) 
+    iter_list <- splitIndices(N, N/ncore) 
+    result <- list() 
+    for(j in seq_along(iter_list)){ 
+      iter_vec <- iter_list[[j]] 
+      result[iter_vec] <- mclapply(iter_vec,function(i){permutation_test_mean(treatment_data[i,],treatment_data_weight[i,],control_data[i,],control_data_weight[i,],num_permute)},mc.cores=ncore) 
+    }
   }
   else{
     result <- lapply(c(1:nrow(treatment_data)),function(i){permutation_test_mean(treatment_data[i,],treatment_data_weight[i,],control_data[i,],control_data_weight[i,],num_permute)})
@@ -442,11 +456,18 @@ permutation_test_var <- function(data_1,weight_1,data_2,weight_2,num_permute=100
 #' write.csv(data.frame(match_gene_name,diff_var),file="diff_var.csv",row.names=FALSE)
 #' }
 #' @importFrom parallel mclapply
+#' @importFrom parallel splitIndices
 #' @export
 test_var_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,num_permute=1000,ncore=1){
   
   if(ncore > 1){
-    result <- mclapply(c(1:nrow(treatment_data)),function(i){permutation_test_var(treatment_data[i,],treatment_data_weight[i,],control_data[i,],control_data_weight[i,],num_permute)},mc.cores=ncore)
+    N <- nrow(treatment_data) 
+    iter_list <- splitIndices(N, N/ncore) 
+    result <- list() 
+    for(j in seq_along(iter_list)){ 
+      iter_vec <- iter_list[[j]] 
+      result[iter_vec] <- mclapply(iter_vec,function(i){permutation_test_var(treatment_data[i,],treatment_data_weight[i,],control_data[i,],control_data_weight[i,],num_permute)},mc.cores=ncore) 
+    }
   }
   else{
     result <- lapply(c(1:nrow(treatment_data)),function(i){permutation_test_var(treatment_data[i,],treatment_data_weight[i,],control_data[i,],control_data_weight[i,],num_permute)})
@@ -491,11 +512,18 @@ permutation_test_anova <- function(data_in,weight_in,group_idx,num_permute=1000)
 
 ##anova test wrap up
 #' @importFrom parallel mclapply
+#' @importFrom parallel splitIndices
 #' @export
 test_anova_main <- function(data_all,weight_all,group_idx,num_permute=1000,ncore=1){
   
   if(ncore > 1){
-    result <- mclapply(c(1:nrow(data_all)),function(i){permutation_test_anova(data_all[i,],weight_all[i,],group_idx,num_permute)},mc.cores=ncore)
+    N <- nrow(data_all) 
+    iter_list <- splitIndices(N, N/ncore) 
+    result <- list() 
+    for(j in seq_along(iter_list)){ 
+      iter_vec <- iter_list[[j]] 
+      result[iter_vec] <- mclapply(iter_vec,function(i){permutation_test_anova(data_all[i,],weight_all[i,],group_idx,num_permute)},mc.cores=ncore) 
+    }
   }
   else{
     result <- lapply(c(1:nrow(data_all)),function(i){permutation_test_anova(data_all[i,],weight_all[i,],group_idx,num_permute)})
@@ -610,6 +638,7 @@ scdv_permute <- function(treatment_data,treatment_data_weight,control_data,contr
 
 ##permute function multi-core
 #' @importFrom parallel mclapply
+#' @importFrom parallel splitIndices
 #' @export
 scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,var_expect_treatment,var_expect_control,num_permute = 1000,ncore = 4){
 
@@ -654,8 +683,13 @@ scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,co
 		return(list(treatment_data_sf_per_temp=treatment_data_sf_per_temp,control_data_sf_per_temp=control_data_sf_per_temp))
 	}
 
-	output_list <- mclapply(c(1:num_permute),permute_fun, mc.cores=ncore)
-
+	iter_list <- splitIndices(num_permute, num_permute/ncore) 
+	output_list <- list() 
+	for(j in seq_along(iter_list)){ 
+	  iter_vec <- iter_list[[j]] 
+	  output_list[iter_vec] <- mclapply(iter_vec,permute_fun,mc.cores=ncore) 
+	}
+	
 	for(i in 1:num_permute){
 		treatment_data_sf_per[,i] <- output_list[[i]]$treatment_data_sf_per_temp
 		control_data_sf_per[,i] <- output_list[[i]]$control_data_sf_per_temp
@@ -692,6 +726,7 @@ scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,co
 #' write.csv(cbind(match_gene_name,diff_disper),file="diff_hypervar.csv",row.names=FALSE)
 #' }
 #' @importFrom parallel mclapply
+#' @importFrom parallel splitIndices
 #' @export
 scdv_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,num_permute=1000,span_param=0.5,ncore=1){
 
