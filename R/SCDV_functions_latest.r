@@ -638,7 +638,6 @@ scdv_permute <- function(treatment_data,treatment_data_weight,control_data,contr
 
 ##permute function multi-core
 #' @importFrom parallel mclapply
-#' @importFrom parallel splitIndices
 #' @export
 scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,var_expect_treatment,var_expect_control,num_permute = 1000,ncore = 4){
 
@@ -683,12 +682,7 @@ scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,co
 		return(list(treatment_data_sf_per_temp=treatment_data_sf_per_temp,control_data_sf_per_temp=control_data_sf_per_temp))
 	}
 
-	iter_list <- splitIndices(num_permute, num_permute/ncore) 
-	output_list <- list() 
-	for(j in seq_along(iter_list)){ 
-	  iter_vec <- iter_list[[j]] 
-	  output_list[iter_vec] <- mclapply(iter_vec,permute_fun,mc.cores=ncore) 
-	}
+	output_list <- mclapply(c(1:num_permute),permute_fun, mc.cores=ncore)
 	
 	for(i in 1:num_permute){
 		treatment_data_sf_per[,i] <- output_list[[i]]$treatment_data_sf_per_temp
