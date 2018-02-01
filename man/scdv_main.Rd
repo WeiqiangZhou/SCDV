@@ -26,11 +26,11 @@ scdv_main(treatment_data, treatment_data_weight, control_data,
 \item{sf_treatment}{The hyper-variability statistics for the treatment group}
  \item{sf_control}{The hyper-variability statistics for the control group}
  \item{sf_diff}{Difference between sf_treatment and sf_control: sf_treatment - sf_control}
- \item{sf_diff_pval}{P-values for testing whether the hyper-variability of each gene in the treamtment group is larger than that in the control group}
+ \item{sf_diff_pval}{P-values for testing whether the hyper-variability of each gene in the treatment group is larger than that in the control group}
  \item{sf_diff_fdr}{Adjusted p-values (FDR) of sf_diff_pval}
- \item{sf_diff_pval_alt}{P-values for testing whether the hyper-variability of each gene in the treamtment group is smaller than that in the control group}
+ \item{sf_diff_pval_alt}{P-values for testing whether the hyper-variability of each gene in the treatment group is smaller than that in the control group}
  \item{sf_diff_fdr_alt}{Adjusted p-values (FDR) of sf_diff_pval_alt}
- \item{sf_diff_pval_ts}{P-values for testing whether the hyper-variability of each gene in the treamtment group is not equal to that in the control group}
+ \item{sf_diff_pval_ts}{P-values for testing whether the hyper-variability of each gene in the treatment group is not equal to that in the control group}
  \item{sf_diff_fdr_ts}{Adjusted p-values (FDR) of sf_diff_pval_ts}
 }
 \description{

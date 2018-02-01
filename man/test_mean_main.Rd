@@ -22,11 +22,11 @@ test_mean_main(treatment_data, treatment_data_weight, control_data,
 }
 \value{
 \item{statistics}{The weighted t-statistics}
- \item{pval_greater}{P-values for testing whether the expression of each gene in the treamtment group is larger than that in the control group}
+ \item{pval_greater}{P-values for testing whether the expression of each gene in the treatment group is larger than that in the control group}
  \item{fdr_greater}{Adjusted p-values (FDR) of pval_greater}
- \item{pval_less}{P-values for testing whether the expression of each gene in the treamtment group is smaller than that in the control group}
+ \item{pval_less}{P-values for testing whether the expression of each gene in the treatment group is smaller than that in the control group}
  \item{fdr_less}{Adjusted p-values (FDR) of pval_less}
- \item{pval_ts}{P-values for testing whether the expression of each gene in the treamtment group is not equal to that in the control group}
+ \item{pval_ts}{P-values for testing whether the expression of each gene in the treatment group is not equal to that in the control group}
  \item{fdr_ts}{Adjusted p-values (FDR) of pval_ts}
 }
 \description{
