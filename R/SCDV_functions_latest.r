@@ -357,6 +357,7 @@ permutation_test_mean <- function(data_1,weight_1,data_2,weight_2,num_permute=10
 #' @param control_data_weight 1 - dropout probability for the control group
 #' @param num_permute Number of permutation performed in the test
 #' @param ncore Number of CPU cores used in the test
+#' @param log_transform If TRUE, take log2 transformation after adding a pseudo count of 1 to the input data. Default TRUE.
 #' @return 
 #'  \item{statistics}{The weighted t-statistics}
 #'  \item{pval_greater}{P-values for testing whether the expression of each gene in the treatment group is larger than that in the control group}
@@ -368,13 +369,18 @@ permutation_test_mean <- function(data_1,weight_1,data_2,weight_2,num_permute=10
 #' @keywords differential mean test
 #' @examples 
 #' \dontrun{
-#' diff_expr <- test_mean_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,ncore=6)
+#' diff_expr <- test_mean_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,ncore=6,log_transform=TRUE)
 #' write.csv(data.frame(match_gene_name,diff_expr),file="diff_expr.csv",row.names=FALSE)
 #' }
 #' @importFrom parallel mclapply
 #' @importFrom parallel splitIndices
 #' @export
-test_mean_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,num_permute=1000,ncore=1){
+test_mean_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,num_permute=1000,ncore=1,log_transform=TRUE){
+  
+  if(log_transform==TRUE){
+    treatment_data <- log2(treatment_data+1)
+    control_data <- log2(control_data+1)
+  }
   
   if(ncore > 1){
     N <- nrow(treatment_data) 
@@ -441,6 +447,7 @@ permutation_test_var <- function(data_1,weight_1,data_2,weight_2,num_permute=100
 #' @param control_data_weight 1 - dropout probability for the control group
 #' @param num_permute Number of permutation performed in the test
 #' @param ncore Number of CPU cores used in the test
+#' @param log_transform If TRUE, take log2 transformation after adding a pseudo count of 1 to the input data. Default TRUE.
 #' @return 
 #'  \item{statistics}{The weighted F-statistics}
 #'  \item{pval_greater}{P-values for testing whether the variability of each gene in the treatment group is larger than that in the control group}
@@ -452,13 +459,18 @@ permutation_test_var <- function(data_1,weight_1,data_2,weight_2,num_permute=100
 #' @keywords differential variability test
 #' @examples 
 #' \dontrun{
-#' diff_var <- test_var_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,ncore=6)
+#' diff_var <- test_var_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,ncore=6,log_transform=TRUE)
 #' write.csv(data.frame(match_gene_name,diff_var),file="diff_var.csv",row.names=FALSE)
 #' }
 #' @importFrom parallel mclapply
 #' @importFrom parallel splitIndices
 #' @export
-test_var_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,num_permute=1000,ncore=1){
+test_var_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,num_permute=1000,ncore=1,log_transform=TRUE){
+  
+  if(log_transform==TRUE){
+    treatment_data <- log2(treatment_data+1)
+    control_data <- log2(control_data+1)
+  }
   
   if(ncore > 1){
     N <- nrow(treatment_data) 

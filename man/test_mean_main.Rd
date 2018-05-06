@@ -5,7 +5,8 @@
 \title{Differential mean test}
 \usage{
 test_mean_main(treatment_data, treatment_data_weight, control_data,
-  control_data_weight, num_permute = 1000, ncore = 1)
+  control_data_weight, num_permute = 1000, ncore = 1,
+  log_transform = TRUE)
 }
 \arguments{
 \item{treatment_data}{Normalized count data for the treatment group}
@@ -19,6 +20,8 @@ test_mean_main(treatment_data, treatment_data_weight, control_data,
 \item{num_permute}{Number of permutation performed in the test}
 
 \item{ncore}{Number of CPU cores used in the test}
+
+\item{log_transform}{If TRUE, take log2 transformation after adding a pseudo count of 1 to the input data. Default TRUE.}
 }
 \value{
 \item{statistics}{The weighted t-statistics}
@@ -34,7 +37,7 @@ This function is used for testing differential gene expression.
 }
 \examples{
 \dontrun{
-diff_expr <- test_mean_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,ncore=6)
+diff_expr <- test_mean_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,ncore=6,log_transform=TRUE)
 write.csv(data.frame(match_gene_name,diff_expr),file="diff_expr.csv",row.names=FALSE)
 }
 }
