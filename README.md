@@ -11,6 +11,9 @@ if (!require("devtools"))
 devtools::install_github("WeiqiangZhou/SCDV")
 ```
 
+### Updates
+05/06/2018: Updated **differential mean test** and **differential var test** by using the log-transformed data in the tests.
+
 ### How to use
 There are three major steps for using SCDV
 
@@ -75,14 +78,14 @@ write.csv(cbind(match_gene_name,diff_disper),file="diff_hypervar.csv",row.names=
 #### 2. differential variability test
 ```
 ##set multi-core using ncore, if not using multi-core, set ncore=1
-diff_var <- test_var_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,ncore=6)
+diff_var <- test_var_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,ncore=6,log_transform=TRUE)
 write.csv(data.frame(match_gene_name,diff_var),file="diff_var.csv",row.names=FALSE)
 ```
 
 #### 3. differential mean test
 ```
 ##set multi-core using ncore, if not using multi-core, set ncore=1
-diff_expr <- test_mean_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,ncore=6)
+diff_expr <- test_mean_main(treatment_data_adjust,treatment_data_weight,control_data_adjust,control_data_weight,num_permute=10000,ncore=6,log_transform=TRUE)
 write.csv(data.frame(match_gene_name,diff_expr),file="diff_expr.csv",row.names=FALSE)
 ```
 
