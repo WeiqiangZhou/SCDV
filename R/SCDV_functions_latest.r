@@ -279,7 +279,7 @@ get_weighted_stat <- function(data_in,weight_in){
 
 	weight_norm <- weight_in/sum(weight_in)
 	mean_weighted <- weighted.mean(data_in,weight_norm)
-	var_weighted <- sum(weight_in*(data_in-mean_weighted)^2)/(sum(weight_in) - 1)
+	var_weighted <- sum(weight_in*(data_in-mean_weighted)^2)/sum(weight_in)
 
 	return(list(mean_weighted=mean_weighted,var_weighted=var_weighted))
 
@@ -317,7 +317,7 @@ permutation_test_mean <- function(data_1,weight_1,data_2,weight_2,num_permute=10
   n1 <- sum(weight_1)
   n2 <- sum(weight_2)
   group_id <- c(rep(1,length(data_1)),rep(2,length(data_2)))
-  test_org <- (stat_1$mean_weighted - stat_2$mean_weighted)/sqrt((1/n1+1/n2)*((n1-1)*stat_1$var_weighted+(n2-1)*stat_2$var_weighted)/(n1+n2-2))
+  test_org <- (stat_1$mean_weighted - stat_2$mean_weighted)/sqrt((1/n1+1/n2)*(n1*stat_1$var_weighted+n2*stat_2$var_weighted)/(n1+n2))
   data_combine <- c(data_1,data_2)
   weight_combine <- c(weight_1,weight_2)
 
@@ -337,7 +337,7 @@ permutation_test_mean <- function(data_1,weight_1,data_2,weight_2,num_permute=10
     stat_2 <- get_weighted_stat(sample_data_2,sample_weight_2)
     n1 <- sum(sample_weight_1)
     n2 <- sum(sample_weight_2)
-    permut[id] <- (stat_1$mean_weighted - stat_2$mean_weighted)/sqrt((1/n1+1/n2)*((n1-1)*stat_1$var_weighted+(n2-1)*stat_2$var_weighted)/(n1+n2-2))
+    permut[id] <- (stat_1$mean_weighted - stat_2$mean_weighted)/sqrt((1/n1+1/n2)*(n1*stat_1$var_weighted+n2*stat_2$var_weighted)/(n1+n2))
 
   }
 
@@ -376,6 +376,9 @@ permutation_test_mean <- function(data_1,weight_1,data_2,weight_2,num_permute=10
 #' @importFrom parallel splitIndices
 #' @export
 test_mean_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,num_permute=1000,ncore=1,log_transform=TRUE){
+  
+  treatment_data_weight <- treatment_data_weight/rowSums(treatment_data_weight)
+  control_data_weight <- control_data_weight/rowSums(control_data_weight)
   
   if(log_transform==TRUE){
     treatment_data <- log2(treatment_data+1)
@@ -427,7 +430,7 @@ permutation_test_var <- function(data_1,weight_1,data_2,weight_2,num_permute=100
     sample_weight_2 <- weight_combine[sample_group==2]
     n1 <- sum(sample_weight_1)
     n2 <- sum(sample_weight_2)
-    permut[id] <- (sum(sample_weight_1*(sample_data_1^2))/(n1 - 1)) / (sum(sample_weight_2*(sample_data_2^2))/(n2 - 1))
+    permut[id] <- (sum(sample_weight_1*(sample_data_1^2))/n1) / (sum(sample_weight_2*(sample_data_2^2))/n2)
 
   }
 
@@ -466,6 +469,9 @@ permutation_test_var <- function(data_1,weight_1,data_2,weight_2,num_permute=100
 #' @importFrom parallel splitIndices
 #' @export
 test_var_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,num_permute=1000,ncore=1,log_transform=TRUE){
+  
+  treatment_data_weight <- treatment_data_weight/rowSums(treatment_data_weight)
+  control_data_weight <- control_data_weight/rowSums(control_data_weight)
   
   if(log_transform==TRUE){
     treatment_data <- log2(treatment_data+1)
@@ -736,6 +742,9 @@ scdv_permute_mc <- function(treatment_data,treatment_data_weight,control_data,co
 #' @export
 scdv_main <- function(treatment_data,treatment_data_weight,control_data,control_data_weight,num_permute=1000,span_param=0.5,ncore=1){
 
+  treatment_data_weight <- treatment_data_weight/rowSums(treatment_data_weight)
+  control_data_weight <- control_data_weight/rowSums(control_data_weight)
+  
 	message('Estimating variance scale factor')
 	flush.console()
 	result <- scdv_estimate(treatment_data,treatment_data_weight,control_data,control_data_weight,span_param)
