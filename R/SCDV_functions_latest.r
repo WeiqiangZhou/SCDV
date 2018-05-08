@@ -314,10 +314,10 @@ permutation_test_mean <- function(data_1,weight_1,data_2,weight_2,num_permute=10
 
   stat_1 <- get_weighted_stat(data_1,weight_1)
   stat_2 <- get_weighted_stat(data_2,weight_2)
-  n1 <- sum(weight_1)
-  n2 <- sum(weight_2)
+  n1 <- length(data_1)
+  n2 <- length(data_2)
   group_id <- c(rep(1,length(data_1)),rep(2,length(data_2)))
-  test_org <- (stat_1$mean_weighted - stat_2$mean_weighted)/sqrt((1/n1+1/n2)*(n1*stat_1$var_weighted+n2*stat_2$var_weighted)/(n1+n2))
+  test_org <- (stat_1$mean_weighted - stat_2$mean_weighted)/sqrt(stat_1$var_weighted/n1+stat_2$var_weighted/n2)
   data_combine <- c(data_1,data_2)
   weight_combine <- c(weight_1,weight_2)
 
@@ -335,9 +335,8 @@ permutation_test_mean <- function(data_1,weight_1,data_2,weight_2,num_permute=10
 
     stat_1 <- get_weighted_stat(sample_data_1,sample_weight_1)
     stat_2 <- get_weighted_stat(sample_data_2,sample_weight_2)
-    n1 <- sum(sample_weight_1)
-    n2 <- sum(sample_weight_2)
-    permut[id] <- (stat_1$mean_weighted - stat_2$mean_weighted)/sqrt((1/n1+1/n2)*(n1*stat_1$var_weighted+n2*stat_2$var_weighted)/(n1+n2))
+
+    permut[id] <- (stat_1$mean_weighted - stat_2$mean_weighted)/sqrt(stat_1$var_weighted/n1+stat_2$var_weighted/n2)
 
   }
 
