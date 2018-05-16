@@ -435,7 +435,7 @@ permutation_test_var <- function(data_1,weight_1,data_2,weight_2,num_permute=100
 
   pval_greater <- mean(test_org < permut)
   pval_less <- mean(test_org > permut)
-  pval_ts <- mean(test_org < permut) + mean(1/test_org > permut)
+  pval_ts <- (sum(test_org < permut) + sum(1/test_org > permut))/num_permute
 
   return(list(statistics=test_org,pval_greater=pval_greater,pval_less=pval_less,pval_ts=pval_ts))
 }
