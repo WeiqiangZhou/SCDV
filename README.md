@@ -13,6 +13,7 @@ devtools::install_github("WeiqiangZhou/SCDV")
 
 ### Updates
 05/06/2018: Updated **differential mean test** and **differential var test** by using the log-transformed data in the tests.
+05/16/2018: Fix a bug in the calculation of two-sided _p_-values in **differential var test**.
 
 ### How to use
 There are three major steps for using SCDV
