@@ -4,15 +4,17 @@
 \alias{get_expected_cell}
 \title{Get the nearest neighboring cells}
 \usage{
-get_expected_cell(data_count, gene_len_org, max_num = 20,
-  scale_factor = 1e+06)
+get_expected_cell(data_count, gene_len_org, neighbor_num = NULL,
+  max_num = 20, scale_factor = 1e+06)
 }
 \arguments{
 \item{data_count}{Input count matrix.}
 
 \item{gene_len_org}{A vector for the length of genes in coding regions}
 
-\item{max_num}{Maximum number of nearest neighboring cells}
+\item{neighbor_num}{Number of nearest neighboring cells to use. If NULL, the number will be selected automatically}
+
+\item{max_num}{Maximum number of nearest neighboring cells for automatic selection}
 
 \item{scale_factor}{Global scale factor for normalizing the nearest neighboring cells}
 }
