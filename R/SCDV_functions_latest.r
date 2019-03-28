@@ -35,7 +35,7 @@ get_expected_cell <- function(data_count,gene_len_org,neighbor_num=NULL,max_num=
   data_dist <- as.matrix(dist(t(data_FPKM)))
   data_expect <- matrix(data=NA,ncol=ncol(data_count),nrow=nrow(data_count))
 
-  if(max_num==1 | neighbor_num==1){
+  if(max_num==1 || neighbor_num==1){
     for(j in 1:ncol(data_FPKM)){
       nearest_cell_idx <- sort(data_dist[j,],decreasing=FALSE,index.return=TRUE)$ix[2]
       data_expect[,j] <- data_FPKM[,nearest_cell_idx]
