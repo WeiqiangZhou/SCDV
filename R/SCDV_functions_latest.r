@@ -26,23 +26,23 @@ qc_check <- function(data_count){
 #' @export
 get_expected_cell <- function(data_count,gene_len_org,neighbor_num=NULL,max_num=20,scale_factor=1e6){
 
-  if(max_num > ncol(data_count)){
-    max_num <- ncol(data_count)
-  }
-  
   gene_len_scale <- ceiling(gene_len_org/1000)
   data_FPKM <- t(t(data_count/gene_len_scale)*scale_factor/apply(data_count,2,sum))
   data_dist <- as.matrix(dist(t(data_FPKM)))
   data_expect <- matrix(data=NA,ncol=ncol(data_count),nrow=nrow(data_count))
 
-  if(max_num==1 || neighbor_num==1){
-    for(j in 1:ncol(data_FPKM)){
-      nearest_cell_idx <- sort(data_dist[j,],decreasing=FALSE,index.return=TRUE)$ix[2]
-      data_expect[,j] <- data_FPKM[,nearest_cell_idx]
+  if(is.null(neighbor_num)){
+    if(max_num > ncol(data_count)){
+      max_num <- ncol(data_count)
     }
-  }
-  else{
-    if(is.null(neighbor_num)){
+    
+    if(max_num==1){
+      for(j in 1:ncol(data_FPKM)){
+        nearest_cell_idx <- sort(data_dist[j,],decreasing=FALSE,index.return=TRUE)$ix[2]
+        data_expect[,j] <- data_FPKM[,nearest_cell_idx]
+      }
+    }
+    else{
       sim_stat <- list()
       sim_stat[[1]] <- rep(NA,ncol(data_FPKM))
       for(j in 1:ncol(data_FPKM)){
@@ -70,18 +70,30 @@ get_expected_cell <- function(data_count,gene_len_org,neighbor_num=NULL,max_num=
         sum(lm(sim_stat_mean_diff~x+x2)$residuals^2)
       }))
       neighbor_num <- neighbor_num + 1
-    }
-    else{
-      if(neighbor_num > ncol(data_count)){
-        neighbor_num <- ncol(data_count)
+      
+      for(j in 1:ncol(data_FPKM)){
+        nearest_cell_idx <- sort(data_dist[j,],decreasing=FALSE,index.return=TRUE)$ix[2:neighbor_num]
+        data_expect[,j] <- apply(data_FPKM[,nearest_cell_idx],1,mean)
       }
     }
-   
-    for(j in 1:ncol(data_FPKM)){
-      nearest_cell_idx <- sort(data_dist[j,],decreasing=FALSE,index.return=TRUE)$ix[2:neighbor_num]
-      data_expect[,j] <- apply(data_FPKM[,nearest_cell_idx],1,mean)
+  }
+  else{
+    if(neighbor_num > ncol(data_count)){
+      neighbor_num <- ncol(data_count)
     }
-
+    
+    if(neighbor_num==1){
+      for(j in 1:ncol(data_FPKM)){
+        nearest_cell_idx <- sort(data_dist[j,],decreasing=FALSE,index.return=TRUE)$ix[2]
+        data_expect[,j] <- data_FPKM[,nearest_cell_idx]
+      }
+    }
+    else{
+      for(j in 1:ncol(data_FPKM)){
+        nearest_cell_idx <- sort(data_dist[j,],decreasing=FALSE,index.return=TRUE)$ix[2:neighbor_num]
+        data_expect[,j] <- apply(data_FPKM[,nearest_cell_idx],1,mean)
+      }
+    }
   }
 
   return(list(data_expect=data_expect,neighbor_num=neighbor_num))
